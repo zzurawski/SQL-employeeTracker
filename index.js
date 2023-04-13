@@ -1,19 +1,20 @@
+require('dotenv').config();
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
-const consoleTable = require('console.table');
+require('console.table');
 const Department = require('./classes/departmentClass');
 const Role = require('./classes/roleClass');
 const Employee = require('./classes/employeeClass');
 
-require('dotenv').config;
 
 const db = mysql.createConnection(
     {
-        user: process.env.user,
-        password: process.env.password,
-        database: process.env.database,
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
     }
-)
+);
 
 const questions = 
     {
@@ -29,7 +30,7 @@ const questions =
             {
                 type: 'list',
                 message: 'Choose a Table',
-                name: 'selectTable',
+                name: 'chooseTable',
                 choices: ['Department', 'Employee', 'Role', 'Return']
             }
         ],
@@ -82,24 +83,24 @@ const questions =
         ],
         addRole: [
             {
-                type: 'input',
+                type: 'number',
                 message: 'Enter the new id of the role you would like to add',
-                name: 'roleID'
+                name: 'id'
             },
             {
                 type: 'input',
                 message: 'Enter the new role title',
-                name: 'roleTitle',
+                name: 'title',
             },
             {
                 type: 'number',
                 message: 'What is the salary for this role (decimal form pls)?',
-                name: 'roleSalary',
+                name: 'salary',
             },
             {
-                type: 'input',
+                type: 'number',
                 message: 'Please enter the dept id this role falls under',
-                name: 'roleDept',
+                name: 'dept',
             }
         ],
             
@@ -126,7 +127,7 @@ function init() {
 function selectTable() {
     inquirer.prompt(questions.selectTable)
         .then((answer) => {
-            switch (answer.selectTable) {
+            switch (answer.chooseTable) {
                 case 'Department':
                     viewDept();
                     break;
@@ -187,8 +188,8 @@ function addEmployee() {
                 answers.manager_id,
             );
 
-            db.query('INSERT INTO employee (id, first_name, last_name, role_id, manager_id) VALUES(?,?,?,?,?)'),
-            [employee.employeeID, employee.employeeFirstName, employee.employeeLastName, employee.employeeRole, employee.manager_id],
+         db.query(`INSERT INTO employee (newEmployee.employeeID, newEmployee.employeeFirstName, newEmployee.employeeLastName, newEmployee.employeeRole, newEmployee.manager_id)`,
+            [newEmployee.employeeID, newEmployee.employeeFirstName, newEmployee.employeeLastName, newEmployee.employeeRole, newEmployee.manager_id],
             (err, result) => {
                 if (err) {
                     console.log(err);
@@ -200,7 +201,7 @@ function addEmployee() {
                     })
                 }
             }
-
+         )
 
         })
 };
@@ -227,35 +228,37 @@ function addDept() {
 };
 
 function addRole() {
-    inquirer.prompt(questions.addRole)
-        .then((answers) => {
-            let newRole = new Role(
-                answers.roleID,
-                answers.roleTitle,
-                answers.roleSalary,
-                answers.roleDept,
-            );
-
-            db.query('INSERT INTO role (id, title, salary, department_id) VALUES(?,?)'),
-            [role.id, role.title, role.salary, role.department_id],
-            (err, results) => {
-                if (err) {
-                    console.log(err);
-                }
-                console.table(newRole);
-                db.query('SELECT * FROM role', function (err, results) {
-                    console.table(results);
+    inquirer.prompt(questions.addRole).then((answers) => {
+      console.log(answers);
+      let role = new Role(
+        answers.id,
+        answers.title,
+        answers.salary,
+        answers.dept
+      );
+      console.log(role);
+      // inserts role
+      db.query(
+        "INSERT INTO role (id, title, salary, department_id) VALUES",
+        [role.id, role.title, role.salary, role.dept],
+        (err, result) => {
+          if (err) {
+            console.error(err);
+          }
+          console.table(role);
+                //db.query('SELECT * FROM role', function (err, results) {
+                    //console.table(results);
                     init();
-                })
-            }
+            })
         })
+        
 };
 
 function viewDept() {
     db.query('SELECT * FROM department', (err, result) => {
     console.table(result);
-    init()
     })
+    init()
 };
 
 function viewRole() {
@@ -270,4 +273,8 @@ function viewEmployee() {
         console.table(result);
         init();
     })
-}
+    }
+
+
+
+init()
